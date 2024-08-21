@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href='https://fullcalendar.io/releases/fullcalendar/3.9.0/fullcalendar.min.css' rel='stylesheet' />
+    <script src='https://fullcalendar.io/releases/fullcalendar/3.9.0/lib/jquery.min.js'></script>
+    <script src='https://fullcalendar.io/releases/fullcalendar/3.9.0/lib/moment.min.js'></script>
+    <script src='https://fullcalendar.io/releases/fullcalendar/3.9.0/fullcalendar.min.js'></script>
+    <title>Calendar</title>
+</head>
+<body>
+    <div id="calendar"></div>
+
+    <!-- CSRF 토큰을 자바스크립트에 전달 -->
+    <script>
+        var csrfToken = '{{ csrf_token }}';
+    </script>
+
+    <script type="application/json" id="reservations-data">
+    {{ reservations|safe }}
+    </script>
+
+    <script>
+
+$(document).ready(function() {
+    var reservationsDataElement = document.getElementById('reservations-data');
+
+    var reservations = [];
+    if (reservationsDataElement) {
+        try {
+            reservations = JSON.parse(reservationsDataElement.textContent);
+        } catch (e) {
+            console.error("Error parsing JSON:", e);
+        }
+    }
+
+    $('#calendar').fullCalendar({
+        events: reservations,
+        selectable: true,
+        selectHelper: true,
+        editable: true,
+        select: function(start, end) {
+            var title = prompt('예약자명:');
+            if (title) {
+                var startTime = prompt('시작 시간 (e.g., 14:00):');
+                var endTime = prompt('종료 시간 (e.g., 16:00):');
+
+                if (startTime && endTime) {
+                    var startMoment = moment(start).set({
+                        'hour': startTime.split(':')[0],
+                        'minute': startTime.split(':')[1]
+                    });
+
+                    var endMoment = moment(end).set({
+                        'hour': endTime.split(':')[0],
+                        'minute': endTime.split(':')[1]
+                    });
+
+                    if (startMoment.isValid() && endMoment.isValid()) {
+                        var eventData = {
+                            title: `${title} ${startMoment.format('HH:mm')} ~ ${endMoment.format('HH:mm')}`,
+                            start: startMoment,
+                            end: endMoment
+                        };
+                        $('#calendar').fullCalendar('renderEvent', eventData, true);
+                        saveEventToServer(eventData);
+                    } else {
+                        alert('Invalid time entered. Please enter a valid time.');
+                    }
+                } else {
+                    alert('Time input is required.');
+                }
+            }
+            $('#calendar').fullCalendar('unselect');
+        }
+    });
+
+    function saveEventToServer(event) {
+        $.ajax({
+            url: '/save-event/',
+            type: 'POST',
+            data: {
+                title: event.title,
+                start: event.start.format(),
+                end: event.end.format(),
+                csrfmiddlewaretoken: csrfToken
+            },
+            success: function(response) {
+                alert('Event saved!');
+            },
+            error: function(response) {
+                alert('There was an error saving the event.');
+            }
+        });
+    }
+});
+    </script>
+
+</body>
+</html>
