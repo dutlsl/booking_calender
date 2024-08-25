@@ -7,7 +7,27 @@
     <script src='https://fullcalendar.io/releases/fullcalendar/3.9.0/lib/jquery.min.js'></script>
     <script src='https://fullcalendar.io/releases/fullcalendar/3.9.0/lib/moment.min.js'></script>
     <script src='https://fullcalendar.io/releases/fullcalendar/3.9.0/fullcalendar.min.js'></script>
-    <title>Calendar</title>
+    <title>BookingCalendar</title>
+    <style>
+.fc-event {
+    white-space: normal !important; /* 텍스트 줄바꿈 허용 */
+    word-wrap: break-word !important; /* 긴 단어 줄바꿈 */
+    overflow-wrap: break-word !important; /* 긴 단어 줄바꿈 */
+    font-size: 5px !important; /* 글자 크기 줄이기 */
+    line-height: 1.2 !important; /* 줄 간격 조정 */
+    height: auto !important; /* 이벤트 박스 높이 자동 조정 */
+    padding: 2px !important; /* 이벤트 박스 내부 여백 조정 */
+    overflow: visible !important; /* 이벤트 박스 안의 내용이 박스를 넘어서지 않도록 설정 */
+}
+
+.fc-event-title {
+    white-space: normal !important; /* 이벤트 제목 줄바꿈 */
+    overflow-wrap: break-word !important; /* 긴 단어 줄바꿈 */
+    word-wrap: break-word !important; /* 긴 단어 줄바꿈 */
+}
+
+</style>
+
 </head>
 <body>
     <div id="calendar"></div>
@@ -35,16 +55,19 @@ $(document).ready(function() {
         }
     }
 
+$(document).ready(function() {
     $('#calendar').fullCalendar({
+        selectLongPressDelay: 10,
         events: reservations,
         selectable: true,
         selectHelper: true,
         editable: true,
+        displayEventTime: false,  // 시간 표시 제거
         select: function(start, end) {
-            var title = prompt('예약자명:');
+            var title = prompt('예약자명');
             if (title) {
-                var startTime = prompt('시작 시간 (e.g., 14:00):');
-                var endTime = prompt('종료 시간 (e.g., 16:00):');
+                var startTime = prompt('시작 시간 (e.g., 14:00)');
+                var endTime = prompt('종료 시간 (e.g., 16:00)');
 
                 if (startTime && endTime) {
                     var startMoment = moment(start).set({
@@ -59,7 +82,7 @@ $(document).ready(function() {
 
                     if (startMoment.isValid() && endMoment.isValid()) {
                         var eventData = {
-                            title: `${title} ${startMoment.format('HH:mm')} ~ ${endMoment.format('HH:mm')}`,
+                            title: `${startMoment.format('HH:mm')} ~ ${endMoment.format('HH:mm')} ${title}`,
                             start: startMoment,
                             end: endMoment
                         };
@@ -73,6 +96,20 @@ $(document).ready(function() {
                 }
             }
             $('#calendar').fullCalendar('unselect');
+        },
+        eventRender: function(event, element) {
+            element.find('.fc-time').remove();  // 시간 부분 제거
+            element.css('white-space', 'normal');  // 이벤트 줄바꿈 가능하게 설정
+        }
+    });
+});
+
+    document.getElementById('calendar').addEventListener('touchend', function(event) {
+        var targetElement = event.target;
+
+        if ($(targetElement).closest('.fc-day, .fc-day-number').length) {
+            event.preventDefault();  // 기본 터치 이벤트를 방지
+            $(targetElement).closest('.fc-day, .fc-day-number').click(); // 터치 이벤트를 클릭 이벤트로 트리거
         }
     });
 
@@ -95,6 +132,7 @@ $(document).ready(function() {
         });
     }
 });
+
     </script>
 
 </body>
